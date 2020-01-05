@@ -16,27 +16,31 @@
 -->
 <resources>
 
-  <!-- Power menu reboot -->
-  <java-symbol name="reboot_to_bootloader_title" type="string" />
-  <java-symbol name="reboot_to_bootloader_message" type="string" />
-  <java-symbol name="reboot_to_fastboot_title" type="string" />
-  <java-symbol name="reboot_to_fastboot_message" type="string" />
-  <java-symbol name="reboot_to_recovery_title" type="string" />
-  <java-symbol name="reboot_to_recovery_message" type="string" />
-  <java-symbol name="reboot_system_title" type="string" />
-  <java-symbol name="reboot_system_message" type="string" />
-  <java-symbol type="array" name="config_rebootActionsList" />
-  <java-symbol type="array" name="values_globalActionsList" />
+    <!-- Light / Regular style fonts -->
+    <java-symbol type="string" name="config_lightFontFamily" />
+    <java-symbol type="string" name="config_regularFontFamily" />
 
-  <!-- Package Manager -->
-  <java-symbol type="array" name="config_deviceDisabledComponents" />
-  <java-symbol type="array" name="config_globallyDisabledComponents" />
-  <java-symbol type="array" name="config_forceEnabledComponents" />
+    <!-- Power menu reboot -->
+    <java-symbol name="reboot_to_bootloader_title" type="string" />
+    <java-symbol name="reboot_to_bootloader_message" type="string" />
+    <java-symbol name="reboot_to_fastboot_title" type="string" />
+    <java-symbol name="reboot_to_fastboot_message" type="string" />
+    <java-symbol name="reboot_to_recovery_title" type="string" />
+    <java-symbol name="reboot_to_recovery_message" type="string" />
+    <java-symbol name="reboot_system_title" type="string" />
+    <java-symbol name="reboot_system_message" type="string" />
+    <java-symbol type="array" name="config_rebootActionsList" />
+    <java-symbol type="array" name="values_globalActionsList" />
 
-   <!-- Lock gesture -->
-   <java-symbol type="string" name="gesture_locked_warning" />
+    <!-- Package Manager -->
+    <java-symbol type="array" name="config_deviceDisabledComponents" />
+    <java-symbol type="array" name="config_globallyDisabledComponents" />
+    <java-symbol type="array" name="config_forceEnabledComponents" />
 
-  <!-- More battery styles -->
+    <!-- Lock gesture -->
+    <java-symbol type="string" name="gesture_locked_warning" />
+
+    <!-- More battery styles -->
     <java-symbol type="string" name="config_batterymeterLandPerimeterPathBuddy" />
     <java-symbol type="string" name="config_batterymeterLandFillMaskBuddy" />
     <java-symbol type="string" name="config_batterymeterLandBoltPathBuddy" />
@@ -97,4 +101,5 @@
     <java-symbol type="string" name="config_batterymeterLandBoltPathOrigami" />
     <java-symbol type="string" name="config_batterymeterLandPowersavePathOrigami" />
     <java-symbol type="string" name="config_batterymeterLandErrorPerimeterPathOrigami" />
+    
 </resources>
