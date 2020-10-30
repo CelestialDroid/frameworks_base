@@ -926,4 +926,11 @@ interface IActivityManager {
     int[] getUidFrozenState(in int[] uids);
 
     String[] getSystemIdmapPaths();
+
+    /**
+     * @hide
+     *
+     *  Should disable touch if three fingers to screen shot is active?
+     */
+    boolean isSwipeToScreenshotGestureActive();
 }
