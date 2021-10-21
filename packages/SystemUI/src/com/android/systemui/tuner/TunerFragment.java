@@ -77,19 +77,6 @@ public class TunerFragment extends PreferenceFragment {
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        getActivity().getActionBar().setDisplayHomeAsUpEnabled(true);
-    }
-
-    // aapt doesn't generate keep rules for android:fragment references in <Preference> tags, so
-    // explicitly declare references per usage in `R.xml.tuner_prefs`. See b/120445169.
-    @UsesReflection({
-        @KeepTarget(classConstant = LockscreenFragment.class),
-        @KeepTarget(classConstant = NavBarTuner.class),
-        @KeepTarget(classConstant = PluginFragment.class),
-    })
-    @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         addPreferencesFromResource(R.xml.tuner_prefs);
         if (!PluginPrefs.hasPlugins(getContext())) {
