@@ -33,7 +33,8 @@ LOCAL_REQUIRED_MODULES := \
 	NavigationBarModeGesturalOverlayNarrowBack \
 	NavigationBarModeGesturalOverlayWideBack \
 	NavigationBarModeGesturalOverlayExtraWideBack \
-  NoCutoutOverlay \
+    NavigationBarModeGesturalOverlayFS \
+    NoCutoutOverlay \
 	TransparentNavigationBarOverlay \
 	NotesRoleEnabledOverlay \
 	preinstalled-packages-platform-overlays.xml
