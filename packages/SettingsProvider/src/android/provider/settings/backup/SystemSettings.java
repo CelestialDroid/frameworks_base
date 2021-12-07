@@ -48,7 +48,6 @@ public class SystemSettings {
                 Settings.System.WIFI_STATIC_DNS2,
                 Settings.System.BLUETOOTH_DISCOVERABILITY,
                 Settings.System.BLUETOOTH_DISCOVERABILITY_TIMEOUT,
-                Settings.System.DEFAULT_DEVICE_FONT_SCALE,
                 Settings.System.FONT_SCALE,
                 Settings.System.DIM_SCREEN,
                 Settings.System.SCREEN_OFF_TIMEOUT,
@@ -93,7 +92,6 @@ public class SystemSettings {
                 Settings.System.RING_VIBRATION_INTENSITY,
                 Settings.System.HAPTIC_FEEDBACK_INTENSITY,
                 Settings.System.HARDWARE_HAPTIC_FEEDBACK_INTENSITY,
-                Settings.System.KEYBOARD_VIBRATION_ENABLED,
                 Settings.System.HAPTIC_FEEDBACK_ENABLED,
                 Settings.System.DISPLAY_COLOR_MODE_VENDOR_HINT, // must precede DISPLAY_COLOR_MODE
                 Settings.System.DISPLAY_COLOR_MODE,
@@ -107,11 +105,11 @@ public class SystemSettings {
                 Settings.System.TOUCHPAD_POINTER_SPEED,
                 Settings.System.TOUCHPAD_NATURAL_SCROLLING,
                 Settings.System.TOUCHPAD_TAP_TO_CLICK,
-                Settings.System.TOUCHPAD_TAP_DRAGGING,
                 Settings.System.TOUCHPAD_RIGHT_CLICK_ZONE,
                 Settings.System.CAMERA_FLASH_NOTIFICATION,
                 Settings.System.SCREEN_FLASH_NOTIFICATION,
                 Settings.System.SCREEN_FLASH_NOTIFICATION_COLOR,
+                Settings.System.FULLSCREEN_GESTURES,
                 Settings.System.NOTIFICATION_COOLDOWN_ENABLED,
                 Settings.System.NOTIFICATION_COOLDOWN_ALL,
                 Settings.System.NOTIFICATION_COOLDOWN_VIBRATE_UNLOCKED
