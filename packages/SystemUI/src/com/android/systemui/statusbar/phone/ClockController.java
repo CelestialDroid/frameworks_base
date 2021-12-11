@@ -22,7 +22,6 @@ import android.view.View;
 
 import com.android.systemui.Dependency;
 import com.android.systemui.res.R;
-import com.android.systemui.plugins.DarkIconDispatcher;
 import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.tuner.TunerService;
 
@@ -102,10 +101,6 @@ public class ClockController implements TunerService.Tunable implements TunerSer
             default:
                 break;
         }
-    }
-
-    public void addDarkReceiver() {
-        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mActiveClock);
     }
 
     public void onDensityOrFontScaleChanged() {
