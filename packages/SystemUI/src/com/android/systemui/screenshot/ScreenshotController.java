@@ -249,8 +249,6 @@ public class ScreenshotController {
     private final WindowManager mWindowManager;
     private final WindowManager.LayoutParams mWindowLayoutParams;
     private final AccessibilityManager mAccessibilityManager;
-    @Nullable
-    private final ScreenshotSoundController mScreenshotSoundController;
     private final ScrollCaptureClient mScrollCaptureClient;
     private final PhoneWindow mWindow;
     private final DisplayManager mDisplayManager;
@@ -371,13 +369,6 @@ public class ScreenshotController {
 
         mConfigChanges.applyNewConfig(context.getResources());
         reloadAssets();
-
-        // Sound is only reproduced from the controller of the default display.
-        if (displayId == Display.DEFAULT_DISPLAY) {
-            mScreenshotSoundController = screenshotSoundController.get();
-        } else {
-            mScreenshotSoundController = null;
-        }
 
         mCopyBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -561,7 +552,6 @@ public class ScreenshotController {
             mSaveInBgTask.setActionsReadyListener(this::logSuccessOnActionsReady);
         }
         removeWindow();
-        releaseMediaPlayer();
         releaseContext();
         mBgExecutor.shutdownNow();
     }
@@ -572,11 +562,6 @@ public class ScreenshotController {
     private void releaseContext() {
         mContext.unregisterReceiver(mCopyBroadcastReceiver);
         mContext.release();
-    }
-
-    private void releaseMediaPlayer() {
-        if (mScreenshotSoundController == null) return;
-        mScreenshotSoundController.releaseScreenshotSound();
     }
 
     private void respondToKeyDismissal() {
@@ -888,25 +873,11 @@ public class ScreenshotController {
         }
     }
 
-    private void playCameraSoundIfNeeded() {
-        if (mScreenshotSoundController == null) return;
-
-        if (Settings.System.getInt(mContext.getContentResolver(), Settings.System.SOUND_EFFECTS_ENABLED, 0) != 1) {
-            return;
-        }
-
-        // the controller is not-null only on the default display controller
-        mScreenshotSoundController.playCameraSound();
-    }
-
     /**
      * Save the bitmap but don't show the normal screenshot UI.. just a toast (or notification on
      * failure).
      */
     private void saveScreenshotAndToast(UserHandle owner, Consumer<Uri> finisher) {
-        // Play the shutter sound to notify that we've taken a screenshot
-        playCameraSoundIfNeeded();
-
         saveScreenshotInWorkerThread(
                 owner,
                 /* onComplete */ finisher,
@@ -947,9 +918,6 @@ public class ScreenshotController {
                 }
             });
         }
-
-        // Play the shutter sound to notify that we've taken a screenshot
-        playCameraSoundIfNeeded();
 
         if (DEBUG_ANIM) {
             Log.d(TAG, "starting post-screenshot animation");
