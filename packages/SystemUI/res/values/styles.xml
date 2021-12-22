@@ -132,6 +132,7 @@
     </style>
 
     <style name="TextAppearance.QS.TileLabel.Secondary">
+        <item name="android:lineHeight">@dimen/qs_tile_text_size</item>
         <item name="android:fontFamily">@*android:string/config_bodyFontFamily</item>
     </style>
 
