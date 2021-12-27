@@ -78,6 +78,7 @@ import com.android.systemui.statusbar.notification.row.ExpandableNotificationRow
 import com.android.systemui.statusbar.notification.row.ExpandableNotificationRowDragController;
 import com.android.systemui.statusbar.notification.row.OnUserInteractionCallback;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
+import com.android.systemui.statusbar.policy.GameSpaceManager;
 import com.android.systemui.statusbar.policy.HeadsUpUtil;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.wmshell.BubblesManager;
@@ -135,6 +136,8 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
     private final OnUserInteractionCallback mOnUserInteractionCallback;
 
     private boolean mIsCollapsingToShowActivityOverLockscreen;
+
+    protected GameSpaceManager mGameSpaceManager;
 
     @Inject
     StatusBarNotificationActivityStarter(
@@ -205,6 +208,9 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
         mUserTracker = userTracker;
 
         launchFullScreenIntentProvider.registerListener(entry -> launchFullScreenIntent(entry));
+
+        mGameSpaceManager = new GameSpaceManager(mContext, mKeyguardStateController);
+        mGameSpaceManager.observe();
     }
 
     /**
@@ -584,6 +590,11 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
 
     @VisibleForTesting
     void launchFullScreenIntent(NotificationEntry entry) {
+        GameSpaceManager gameSpace = mGameSpaceManager;
+        if (gameSpace != null && gameSpace.shouldSuppressFullScreenIntent()) {
+            return;
+        }
+
         // Skip if device is in VR mode.
         if (mPresenter.isDeviceInVrMode()) {
             mLogger.logFullScreenIntentSuppressedByVR(entry);
