@@ -578,6 +578,9 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
      * Looks up the scale factor for status bar icons and scales the battery view by that amount.
      */
     void scaleBatteryMeterViewsLegacy() {
+        if (mBatteryIconView == null) {
+            return;
+        }
         Resources res = getContext().getResources();
         TypedValue typedValue = new TypedValue();
 
