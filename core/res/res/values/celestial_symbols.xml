@@ -40,6 +40,10 @@
     <!-- Lock gesture -->
     <java-symbol type="string" name="gesture_locked_warning" />
 
+    <!-- Whether to cleanup fingerprints upon connection to the daemon and when
+         user switches -->
+    <java-symbol type="bool" name="config_cleanupUnusedFingerprints" />
+
     <!-- More battery styles -->
     <java-symbol type="string" name="config_batterymeterLandPerimeterPathBuddy" />
     <java-symbol type="string" name="config_batterymeterLandFillMaskBuddy" />
