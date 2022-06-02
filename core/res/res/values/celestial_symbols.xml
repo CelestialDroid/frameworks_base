@@ -33,6 +33,9 @@
   <java-symbol type="array" name="config_globallyDisabledComponents" />
   <java-symbol type="array" name="config_forceEnabledComponents" />
 
+   <!-- Lock gesture -->
+   <java-symbol type="string" name="gesture_locked_warning" />
+
   <!-- More battery styles -->
     <java-symbol type="string" name="config_batterymeterLandPerimeterPathBuddy" />
     <java-symbol type="string" name="config_batterymeterLandFillMaskBuddy" />
