@@ -36,6 +36,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
@@ -46,6 +49,7 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.android.internal.annotations.VisibleForTesting;
@@ -217,11 +221,9 @@ public class TakeScreenshotService extends Service {
             return;
         }
 
-        Log.d(TAG, "Processing screenshot data");
-        ScreenshotData screenshotData = ScreenshotData.fromRequest(request);
         try {
-            mProcessor.processAsync(screenshotData,
-                    (data) -> dispatchToController(data, onSaved, callback));
+            mProcessor.processAsync(request,
+                    (r) -> dispatchToController(r, onSaved, callback));
         } catch (IllegalStateException e) {
             Log.e(TAG, "Failed to process screenshot request!", e);
             logFailedRequest(request);
@@ -231,12 +233,42 @@ public class TakeScreenshotService extends Service {
         }
     }
 
-    private void dispatchToController(ScreenshotData screenshot,
+    private void dispatchToController(ScreenshotRequest request,
             Consumer<Uri> uriConsumer, RequestCallback callback) {
-        mUiEventLogger.log(ScreenshotEvent.getScreenshotSource(screenshot.getSource()), 0,
-                screenshot.getPackageNameString());
-        Log.d(TAG, "Screenshot request: " + screenshot);
-        mScreenshot.handleScreenshot(screenshot, uriConsumer, callback);
+        ComponentName topComponent = request.getTopComponent();
+        String packageName = topComponent == null ? "" : topComponent.getPackageName();
+        mUiEventLogger.log(
+                ScreenshotEvent.getScreenshotSource(request.getSource()), 0, packageName);
+
+        switch (request.getType()) {
+            case WindowManager.TAKE_SCREENSHOT_FULLSCREEN:
+                if (DEBUG_SERVICE) {
+                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_FULLSCREEN");
+                }
+                mScreenshot.takeScreenshotFullscreen(topComponent, uriConsumer, callback);
+                break;
+            case WindowManager.TAKE_SCREENSHOT_SELECTED_REGION:
+                if (DEBUG_SERVICE) {
+                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_SELECTED_REGION");
+                }
+                mScreenshot.takeScreenshotPartial(topComponent, uriConsumer, callback);
+                break;
+            case WindowManager.TAKE_SCREENSHOT_PROVIDED_IMAGE:
+                if (DEBUG_SERVICE) {
+                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_PROVIDED_IMAGE");
+                }
+                Bitmap screenshot = request.getBitmap();
+                Rect screenBounds = request.getBoundsInScreen();
+                Insets insets = request.getInsets();
+                int taskId = request.getTaskId();
+                int userId = request.getUserId();
+
+                mScreenshot.handleImageAsScreenshot(screenshot, screenBounds, insets,
+                        taskId, userId, topComponent, uriConsumer, callback);
+                break;
+            default:
+                Log.wtf(TAG, "Invalid screenshot option: " + request.getType());
+        }
     }
 
     private void logFailedRequest(ScreenshotRequest request) {
