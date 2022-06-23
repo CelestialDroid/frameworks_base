@@ -44,10 +44,12 @@ import android.app.ICompatCameraControlCallback;
 import android.app.Notification;
 import android.app.assist.AssistContent;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Insets;
@@ -313,6 +315,19 @@ public class ScreenshotController {
                     | ActivityInfo.CONFIG_SCREEN_LAYOUT
                     | ActivityInfo.CONFIG_ASSETS_PATHS);
 
+    private ComponentName mTaskComponentName;
+    private PackageManager mPm;
+
+    private String getForegroundAppLabel() {
+        if (mTaskComponentName != null) {
+            try {
+                final ActivityInfo ai = mPm.getActivityInfo(mTaskComponentName, 0);
+                return ai.applicationInfo.loadLabel(mPm).toString();
+            } catch (PackageManager.NameNotFoundException e) {}
+        }
+        return null;
+    }
+
     @Inject
     ScreenshotController(
             Context context,
@@ -393,7 +408,13 @@ public class ScreenshotController {
         mContext.registerReceiver(mCopyBroadcastReceiver, new IntentFilter(
                         ClipboardOverlayController.COPY_OVERLAY_ACTION),
                 ClipboardOverlayController.SELF_PERMISSION, null, Context.RECEIVER_NOT_EXPORTED);
+
+
+        // Grab PackageManager
+        mPm = mContext.getPackageManager();
     }
+
+
 
     void handleScreenshot(ScreenshotData screenshot, Consumer<Uri> finisher,
             RequestCallback requestCallback) {
@@ -521,6 +542,50 @@ public class ScreenshotController {
                 mWindowManager.getCurrentWindowMetrics().getWindowInsets());
     }
 
+    @MainThread
+    void takeScreenshotFullscreen(ComponentName topComponent, Consumer<Uri> finisher,
+            RequestCallback requestCallback) {
+        Assert.isMainThread();
+        mCurrentRequestCallback = requestCallback;
+        takeScreenshotInternal(topComponent, finisher, getFullScreenRect());
+    }
+
+    @MainThread
+    void handleImageAsScreenshot(Bitmap screenshot, Rect screenshotScreenBounds,
+            Insets visibleInsets, int taskId, int userId, ComponentName topComponent,
+            Consumer<Uri> finisher, RequestCallback requestCallback) {
+        Assert.isMainThread();
+        if (screenshot == null) {
+            Log.e(TAG, "Got null bitmap from screenshot message");
+            mNotificationsController.notifyScreenshotError(
+                    R.string.screenshot_failed_to_capture_text);
+            requestCallback.reportError();
+            return;
+        }
+
+        boolean showFlash = false;
+        if (screenshotScreenBounds == null
+                || !aspectRatiosMatch(screenshot, visibleInsets, screenshotScreenBounds)) {
+            showFlash = true;
+            visibleInsets = Insets.NONE;
+            screenshotScreenBounds = new Rect(0, 0, screenshot.getWidth(), screenshot.getHeight());
+        }
+        mCurrentRequestCallback = requestCallback;
+        saveScreenshot(screenshot, finisher, screenshotScreenBounds, visibleInsets, topComponent,
+                showFlash, UserHandle.of(userId));
+    }
+
+    /**
+     * Displays a screenshot selector
+     */
+    @MainThread
+    void takeScreenshotPartial(ComponentName topComponent,
+            final Consumer<Uri> finisher, RequestCallback requestCallback) {
+        Assert.isMainThread();
+        startPartialScreenshotActivity(Process.myUserHandle());
+        finisher.accept(null);
+    }
+
     /**
      * Clears current screenshot
      */
@@ -642,6 +707,110 @@ public class ScreenshotController {
         setContentView(mScreenshotView);
     }
 
+    /**
+     * Takes a screenshot of the current display and shows an animation.
+     */
+    private void takeScreenshotInternal(ComponentName topComponent, Consumer<Uri> finisher,
+            Rect crop) {
+        mScreenshotTakenInPortrait =
+                mContext.getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
+
+        // copy the input Rect, since SurfaceControl.screenshot can mutate it
+        Rect screenRect = new Rect(crop);
+        Bitmap screenshot = mImageCapture.captureDisplay(mDisplayTracker.getDefaultDisplayId(),
+                crop);
+
+        if (screenshot == null) {
+            Log.e(TAG, "takeScreenshotInternal: Screenshot bitmap was null");
+            mNotificationsController.notifyScreenshotError(
+                    R.string.screenshot_failed_to_capture_text);
+            if (mCurrentRequestCallback != null) {
+                mCurrentRequestCallback.reportError();
+            }
+            return;
+        }
+
+        saveScreenshot(screenshot, finisher, screenRect, Insets.NONE, topComponent, true,
+                Process.myUserHandle());
+
+        mBroadcastSender.sendBroadcast(new Intent(ClipboardOverlayController.SCREENSHOT_ACTION),
+                ClipboardOverlayController.SELF_PERMISSION);
+    }
+
+    private Bitmap captureScreenshot() {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getDefaultDisplay().getRealMetrics(displayMetrics);
+        return mImageCapture.captureDisplay(mDisplayTracker.getDefaultDisplayId(),
+                new Rect(0, 0, displayMetrics.widthPixels, displayMetrics.heightPixels));
+    }
+
+    private void saveScreenshot(Bitmap screenshot, Consumer<Uri> finisher, Rect screenRect,
+            Insets screenInsets, ComponentName topComponent, boolean showFlash, UserHandle owner) {
+        withWindowAttached(() -> {
+            if (mUserManager.isManagedProfile(owner.getIdentifier())) {
+                mScreenshotView.announceForAccessibility(mContext.getResources().getString(
+                        R.string.screenshot_saving_work_profile_title));
+            } else {
+                mScreenshotView.announceForAccessibility(
+                        mContext.getResources().getString(R.string.screenshot_saving_title));
+            }
+        });
+
+        mScreenshotView.reset();
+
+        if (mScreenshotView.isAttachedToWindow()) {
+            // if we didn't already dismiss for another reason
+            if (!mScreenshotView.isDismissing()) {
+                mUiEventLogger.log(ScreenshotEvent.SCREENSHOT_REENTERED, 0, mPackageName);
+            }
+            if (DEBUG_WINDOW) {
+                Log.d(TAG, "saveScreenshot: screenshotView is already attached, resetting. "
+                        + "(dismissing=" + mScreenshotView.isDismissing() + ")");
+            }
+        }
+        mPackageName = topComponent == null ? "" : topComponent.getPackageName();
+        mScreenshotView.setPackageName(mPackageName);
+
+        mScreenshotView.updateOrientation(
+                mWindowManager.getCurrentWindowMetrics().getWindowInsets());
+
+        mScreenBitmap = screenshot;
+
+        if (!isUserSetupComplete(owner)) {
+            Log.w(TAG, "User setup not complete, displaying toast only");
+            // User setup isn't complete, so we don't want to show any UI beyond a toast, as editing
+            // and sharing shouldn't be exposed to the user.
+            saveScreenshotAndToast(owner, finisher);
+            return;
+        }
+
+        // Optimizations
+        mScreenBitmap.setHasAlpha(false);
+        mScreenBitmap.prepareToDraw();
+
+        saveScreenshotInWorkerThread(owner, finisher, this::showUiOnActionsReady,
+                this::showUiOnQuickShareActionReady);
+
+        // The window is focusable by default
+        setWindowFocusable(true);
+        mScreenshotView.requestFocus();
+
+        enqueueScrollCaptureRequest(owner);
+
+        attachWindow();
+        prepareAnimation(screenRect, showFlash, () -> {
+                mMessageContainerController.onScreenshotTaken(owner);
+        });
+
+        mScreenshotView.badgeScreenshot(mContext.getPackageManager().getUserBadgedIcon(
+                mContext.getDrawable(R.drawable.overlay_badge_background), owner));
+        mScreenshotView.setScreenshot(mScreenBitmap, screenInsets);
+        // ignore system bar insets for the purpose of window layout
+        mWindow.getDecorView().setOnApplyWindowInsetsListener(
+                (v, insets) -> WindowInsets.CONSUMED);
+        mScreenshotHandler.cancelTimeout(); // restarted after animation
+    }
+
     private void prepareAnimation(Rect screenRect, boolean showFlash,
             Runnable onAnimationComplete) {
         mScreenshotView.getViewTreeObserver().addOnPreDrawListener(
@@ -714,6 +883,48 @@ public class ScreenshotController {
                 onScrollCaptureResponseReady(future, owner), mMainExecutor);
     }
 
+    public void startLongScreenshotActivity(ScrollCaptureController.LongScreenshot longScreenshot,
+            UserHandle owner) {
+        mLongScreenshotHolder.setForegroundAppName(getForegroundAppLabel());
+        mLongScreenshotHolder.setLongScreenshot(longScreenshot);
+        mLongScreenshotHolder.setTransitionDestinationCallback(
+                (transitionDestination, onTransitionEnd) -> {
+                        mScreenshotView.startLongScreenshotTransition(
+                                transitionDestination, onTransitionEnd,
+                                longScreenshot);
+                    // TODO: Do this via ActionIntentExecutor instead.
+                    mContext.sendBroadcast(new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS));
+                }
+        );
+
+        final Intent intent = new Intent(mContext, LongScreenshotActivity.class);
+        intent.putExtra(LongScreenshotActivity.EXTRA_SCREENSHOT_USER_HANDLE,
+                owner);
+        intent.setFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        mContext.startActivity(intent,
+                ActivityOptions.makeCustomAnimation(mContext, 0, 0).toBundle());
+        RemoteAnimationAdapter runner = new RemoteAnimationAdapter(
+                SCREENSHOT_REMOTE_RUNNER, 0, 0);
+        try {
+            WindowManagerGlobal.getWindowManagerService()
+                    .overridePendingAppTransitionRemote(runner,
+                            mDisplayTracker.getDefaultDisplayId());
+        } catch (Exception e) {
+            Log.e(TAG, "Error overriding screenshot app transition", e);
+        }
+    }
+
+    private void startPartialScreenshotActivity(UserHandle owner) {
+        Bitmap newScreenshot = captureScreenshot();
+
+        ScrollCaptureController.BitmapScreenshot bitmapScreenshot =
+            new ScrollCaptureController.BitmapScreenshot(mContext, newScreenshot);
+
+        startLongScreenshotActivity(bitmapScreenshot, owner);
+    }
+
     private void onScrollCaptureResponseReady(Future<ScrollCaptureResponse> responseFuture,
             UserHandle owner) {
         try {
@@ -780,35 +991,7 @@ public class ScreenshotController {
                 mScreenshotView.restoreNonScrollingUi();
                 return;
             }
-
-            mLongScreenshotHolder.setLongScreenshot(longScreenshot);
-            mLongScreenshotHolder.setTransitionDestinationCallback(
-                    (transitionDestination, onTransitionEnd) -> {
-                        mScreenshotView.startLongScreenshotTransition(
-                                transitionDestination, onTransitionEnd,
-                                longScreenshot);
-                        // TODO: Do this via ActionIntentExecutor instead.
-                        mContext.closeSystemDialogs();
-                    }
-            );
-
-            final Intent intent = new Intent(mContext, LongScreenshotActivity.class);
-            intent.putExtra(LongScreenshotActivity.EXTRA_SCREENSHOT_USER_HANDLE,
-                    owner);
-            intent.setFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
-            mContext.startActivity(intent,
-                    ActivityOptions.makeCustomAnimation(mContext, 0, 0).toBundle());
-            RemoteAnimationAdapter runner = new RemoteAnimationAdapter(
-                    SCREENSHOT_REMOTE_RUNNER, 0, 0);
-            try {
-                WindowManagerGlobal.getWindowManagerService()
-                        .overridePendingAppTransitionRemote(runner,
-                                mDisplayTracker.getDefaultDisplayId());
-            } catch (Exception e) {
-                Log.e(TAG, "Error overriding screenshot app transition", e);
-            }
+            startLongScreenshotActivity(longScreenshot, owner);
         }, mMainExecutor);
     }
 
