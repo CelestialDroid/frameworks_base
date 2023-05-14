@@ -272,8 +272,13 @@ import javax.inject.Provider;
  * {@link ActivityStarterImpl}
  */
 @SysUISingleton
-public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
-
+public class CentralSurfacesImpl extends CoreStartable implements
+        TunerService.Tunable,
+        CentralSurfaces {
+        
+    private static final String QS_TRANSPARENCY =
+            "system:" + Settings.System.QS_TRANSPARENCY;
+        
     private static final String BANNER_ACTION_CANCEL =
             "com.android.systemui.statusbar.banner_action_cancel";
     private static final String BANNER_ACTION_SETUP =
@@ -874,6 +879,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mKeyguardIndicationController.init();
 
         mColorExtractor.addOnColorsChangedListener(mOnColorsChangedListener);
+        
+        mTunerService.addTunable(this, QS_TRANSPARENCY);
 
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 
@@ -2977,6 +2984,18 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     @Override
     public boolean isBouncerShowingScrimmed() {
         return isBouncerShowing() && mStatusBarKeyguardViewManager.primaryBouncerNeedsScrimming();
+    }
+    
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        switch (key) {
+            case QS_TRANSPARENCY:
+                mScrimController.setCustomScrimAlpha(
+                        TunerService.parseInteger(newValue, 100));
+                break;
+            default:
+                break;
+         }
     }
 
     // End Extra BaseStatusBarMethods.
