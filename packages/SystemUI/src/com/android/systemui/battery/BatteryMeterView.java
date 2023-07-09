@@ -259,7 +259,7 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
         updateVisibility();
     }
 
-    protected void setBatteryPercent(int showBatteryPercent) {
+    public void setBatteryPercent(int showBatteryPercent) {
         if (showBatteryPercent == mShowBatteryPercent) return;
         mShowBatteryPercent = showBatteryPercent;
         updatePercentView();
@@ -489,13 +489,6 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
         String contentDescription;
         if (mBatteryStateUnknown) {
             contentDescription = context.getString(R.string.accessibility_battery_unknown);
-        } else if (mShowPercentMode == MODE_ESTIMATE && !TextUtils.isEmpty(mEstimateText)) {
-            contentDescription = context.getString(
-                    mIsBatteryDefender
-                            ? R.string.accessibility_battery_level_charging_paused_with_estimate
-                            : R.string.accessibility_battery_level_with_estimate,
-                    mLevel,
-                    mEstimateText);
         } else if (mIsBatteryDefender) {
             contentDescription =
                     context.getString(R.string.accessibility_battery_level_charging_paused, mLevel);
@@ -524,7 +517,9 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
                                     || (mBatteryPercentCharging && isCharging())
                                     || mShowPercentMode == MODE_ON
                                     || mShowPercentMode == MODE_ESTIMATE;
-        showPercent = showPercent && !mBatteryStateUnknown;
+        showPercent = showPercent && !mBatteryStateUnknown
+                      && mBatteryStyle != BATTERY_STYLE_LANDSCAPE_IOS16
+                                    && mBatteryStyle != BATTERY_STYLE_HIDDEN;
 
         if (showPercent) {
             mAccessorizedDrawable.showPercent(false);
@@ -557,7 +552,8 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
                         LayoutParams.WRAP_CONTENT,        
                         (int) Math.ceil(fontHeight)));
             }
-            if (mBatteryStyle == BATTERY_STYLE_HIDDEN || mBatteryStyle == BATTERY_STYLE_TEXT) {
+            if (mBatteryStyle == BATTERY_STYLE_HIDDEN 
+                || mBatteryStyle == BATTERY_STYLE_TEXT) {
                 mBatteryPercentView.setPaddingRelative(0, 0, 0, 0);
             } else {
                 Resources res = getContext().getResources();
