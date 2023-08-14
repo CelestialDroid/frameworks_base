@@ -381,6 +381,11 @@ oneway interface IStatusBar
      */
     void showMediaOutputSwitcher(String packageName);
 
+    /*
+     * @hide
+     */
+    void toggleCameraFlash();
+
     /** Enters desktop mode.
     *
     * @param displayId the id of the current display.
