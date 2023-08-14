@@ -221,7 +221,8 @@ import com.android.internal.policy.TransitionAnimation;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.server.AccessibilityManagerInternal;
-import com.android.internal.util.custom.CustomUtils;
+import com.android.internal.util.ScreenshotHelper;
+import com.android.internal.util.celestial.CelestialUtils;
 import com.android.server.ExtconStateObserver;
 import com.android.server.ExtconUEventObserver;
 import com.android.server.GestureLauncherService;
@@ -1368,8 +1369,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private boolean toggleFlashLight() {
-        if (mTorchActionMode != 0 && CustomUtils.deviceHasFlashlight(mContext)) {
-            CustomUtils.toggleCameraFlash();
+        if (mTorchActionMode != 0 && CelestialUtils.deviceHasFlashlight(mContext)) {
+            CelestialUtils.toggleCameraFlash();
             return true;
         }
         return false;
