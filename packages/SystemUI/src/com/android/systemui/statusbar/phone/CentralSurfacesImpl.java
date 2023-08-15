@@ -241,6 +241,7 @@ import com.android.wm.shell.startingsurface.StartingSurface;
 import dalvik.annotation.optimization.NeverCompile;
 
 import dagger.Lazy;
+import com.android.systemui.tuner.TunerService;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -467,6 +468,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final UserTracker mUserTracker;
     private final Provider<FingerprintManager> mFingerprintManager;
     private final ActivityStarter mActivityStarter;
+    private final TunerService mTunerService;
 
     private final DisplayMetrics mDisplayMetrics;
 
@@ -705,6 +707,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             ActivityTransitionAnimator activityTransitionAnimator,
             DeviceStateManager deviceStateManager,
             WiredChargingRippleController wiredChargingRippleController,
+            TunerService tunerService,
             IDreamManager dreamManager,
             Lazy<CameraLauncher> cameraLauncherLazy,
             Lazy<LightRevealScrimViewModel> lightRevealScrimViewModelLazy,
@@ -809,6 +812,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mFingerprintManager = fingerprintManager;
         mActivityStarter = activityStarter;
         mSceneContainerFlags = sceneContainerFlags;
+        mTunerService = tunerService;
 
         mLockscreenShadeTransitionController = lockscreenShadeTransitionController;
         mStartingSurfaceOptional = startingSurfaceOptional;
