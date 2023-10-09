@@ -5878,11 +5878,6 @@ public final class Settings {
          * the setting value. See an example above.
          */
 
-        /**
-         * Whether to take partial screenshot with volume down + power click.
-         * @hide
-         */
-        public static final String CLICK_PARTIAL_SCREENSHOT = "click_partial_screenshot";
         
         /**
          * Whether StatusBar icons should use app icon
