@@ -233,7 +233,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
                         Toast.LENGTH_LONG).show();
 
                 // Remove notification
-                mNotificationManager.cancelAsUser(null, NOTIFICATION_VIEW_ID, currentUser);
+                mNotificationManager.cancelAsUser(null, NOTIF_BASE_ID, currentUser);
                 Log.d(TAG, "Deleted recording " + uri);
                 break;
         }
