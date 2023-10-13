@@ -680,11 +680,9 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
                 break;
         }
 
-        float mainBatteryHeight =
-                res.getDimensionPixelSize(R.dimen.status_bar_battery_icon_height) * iconScaleFactor;
-        float mainBatteryWidth =
-                res.getDimensionPixelSize(R.dimen.status_bar_battery_icon_width) * iconScaleFactor;
-
+        float mainBatteryHeight = batteryHeight * iconScaleFactor;
+        float mainBatteryWidth = batteryWidth * iconScaleFactor;
+        
         boolean displayShield = mDisplayShieldEnabled && mIsBatteryDefender;
         float fullBatteryIconHeight =
                 BatterySpecs.getFullBatteryHeight(mainBatteryHeight, displayShield);
