@@ -278,6 +278,7 @@ public class InternetDialog extends SystemUIDialog implements
             Log.d(TAG, "onStop");
         }
         mMobileNetworkLayout.setOnClickListener(null);
+        mMobileDataToggle.setOnClickListener(null);
         mConnectedWifListLayout.setOnClickListener(null);
         if (mSecondaryMobileNetworkLayout != null) {
             mSecondaryMobileNetworkLayout.setOnClickListener(null);
