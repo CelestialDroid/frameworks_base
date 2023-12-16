@@ -31,6 +31,8 @@ import android.widget.TextView;
 
 import android.content.Context;
 
+import com.android.internal.R;
+import com.android.settingslib.Utils;
 import com.android.systemui.plugins.GlobalActions;
 import com.android.systemui.scrim.ScrimDrawable;
 import com.android.systemui.statusbar.BlurUtils;
