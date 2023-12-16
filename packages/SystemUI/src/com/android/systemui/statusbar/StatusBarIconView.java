@@ -705,7 +705,6 @@ public class StatusBarIconView extends AnimatedImageView implements StatusIconDi
                 ? com.android.internal.R.color.notification_default_color_dark
                 : com.android.internal.R.color.notification_default_color_light));
         }
-    }
 
     private void updateDecorColor() {
         int color = NotificationUtils.interpolateColors(mDecorColor, Color.WHITE, mDozeAmount);
