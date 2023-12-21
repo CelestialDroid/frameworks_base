@@ -1520,11 +1520,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     public void updateMaxDisplayedNotificationsWrapper(boolean recompute) {
         updateMaxDisplayedNotifications(recompute);
     }
-
-    public void updateMaxDisplayedNotificationsWrapper(boolean recompute) {
-        updateMaxDisplayedNotifications(recompute);
-    }
-
+    
     private boolean shouldAvoidChangingNotificationsCount() {
         return mHintAnimationRunning || mUnlockedScreenOffAnimationController.isAnimationPlaying();
     }
