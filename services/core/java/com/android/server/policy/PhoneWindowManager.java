@@ -916,9 +916,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.STYLUS_BUTTONS_ENABLED), false, this,
                     UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.SWIPE_TO_SCREENSHOT), false, this,
-                    UserHandle.USER_ALL);
 	        resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.TORCH_POWER_BUTTON_GESTURE), false, this,
                     UserHandle.USER_ALL);
@@ -1073,14 +1070,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         // If the power key has still not yet been handled, then detect short
         // press, long press, or multi press and decide what to do.
+        final int keyCode = event.getKeyCode();
         mPowerKeyHandled = mPowerKeyHandled || hungUp
                 || handledByPowerManager || mKeyCombinationManager.isPowerKeyIntercepted();
         if (!mPowerKeyHandled) {
-            if (!interactive) {
-                if (mTorchActionMode == 0) {
-                    wakeUpFromWakeKey(event);
+            if (!interactive && (keyCode == KeyEvent.KEYCODE_POWER)) {
+                wakeUpFromWakeKey(event);
                 }
-            }
         } else {
             // handled by another power key policy.
             if (mSingleKeyGestureDetector.isKeyIntercepted(KEYCODE_POWER)) {
@@ -1119,6 +1115,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         if (count == 1) {
             mSideFpsEventHandler.notifyPowerPressed();
         }
+        if (mDefaultDisplayPolicy.isScreenOnEarly() && !mDefaultDisplayPolicy.isScreenOnFully()) {
+            Slog.i(TAG, "Suppressed redundant power key press while "
+                    + "already in the process of turning the screen on.");
+            return;
+        }
+
         final boolean interactive = mDefaultDisplayPolicy.isAwake();
 
         Slog.d(
@@ -1184,8 +1186,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     break;
                 }
             }
-        } else if (mTorchActionMode != 0 && beganFromNonInteractive) {
-            wakeUpFromPowerKey(eventTime);
+        } else if (mTorchActionMode != 0) {
+            wakeUpFromWakeKey(eventTime, KEYCODE_POWER, /* isDown= */ false);
         }
     }
 
