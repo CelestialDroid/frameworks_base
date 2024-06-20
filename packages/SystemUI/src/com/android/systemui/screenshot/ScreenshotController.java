@@ -670,6 +670,12 @@ public class ScreenshotController {
             }
 
             @Override
+            public void onAction(Intent intent, UserHandle owner, boolean overrideTransition) {
+                mActionExecutor.launchIntentAsync(
+                        intent, createWindowTransition(), owner, overrideTransition);
+            }
+
+            @Override
             public void onDismiss() {
                 finishDismiss();
             }
