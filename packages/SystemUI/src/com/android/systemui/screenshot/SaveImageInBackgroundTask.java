@@ -16,29 +16,40 @@
 
 package com.android.systemui.screenshot;
 
+import static com.android.systemui.screenshot.LogConfig.DEBUG_ACTIONS;
 import static com.android.systemui.screenshot.LogConfig.DEBUG_CALLBACK;
 import static com.android.systemui.screenshot.LogConfig.DEBUG_STORAGE;
 import static com.android.systemui.screenshot.LogConfig.logTag;
 import static com.android.systemui.screenshot.ScreenshotNotificationSmartActionsProvider.ScreenshotSmartActionType;
 
+import android.app.ActivityTaskManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.UserInfo;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Process;
+import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.provider.DeviceConfig;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.config.sysui.SystemUiDeviceConfigFlags;
+import com.android.systemui.R;
 import com.android.systemui.flags.FeatureFlags;
+import com.android.systemui.screenshot.ScreenshotController.SavedImageData.ActionTransition;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -49,6 +60,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * An AsyncTask that saves an image to the media store in the background.
@@ -69,6 +81,7 @@ class SaveImageInBackgroundTask extends AsyncTask<Void, Void, Void> {
     private final ScreenshotNotificationSmartActionsProvider mSmartActionsProvider;
     private String mScreenshotId;
     private final Random mRandom = new Random();
+    private final Supplier<ActionTransition> mSharedElementTransition;
     private final ImageExporter mImageExporter;
     private long mImageTime;
 
@@ -78,6 +91,7 @@ class SaveImageInBackgroundTask extends AsyncTask<Void, Void, Void> {
             ImageExporter exporter,
             ScreenshotSmartActions screenshotSmartActions,
             ScreenshotController.SaveImageInBackgroundData data,
+            Supplier<ActionTransition> sharedElementTransition,
             ScreenshotNotificationSmartActionsProvider
                     screenshotNotificationSmartActionsProvider
     ) {
@@ -86,6 +100,7 @@ class SaveImageInBackgroundTask extends AsyncTask<Void, Void, Void> {
         mScreenshotSmartActions = screenshotSmartActions;
         mImageData = new ScreenshotController.SavedImageData();
         mQuickShareData = new ScreenshotController.QuickShareData();
+        mSharedElementTransition = sharedElementTransition;
         mImageExporter = exporter;
 
         // Prepare all the output metadata
