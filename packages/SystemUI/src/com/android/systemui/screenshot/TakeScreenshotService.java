@@ -249,10 +249,21 @@ public class TakeScreenshotService extends Service {
         }
 
         Log.d(TAG, "Processing screenshot data");
-        ScreenshotData screenshotData = ScreenshotData.fromRequest(request);
+
+
+        if (mFeatureFlags.isEnabled(MULTI_DISPLAY_SCREENSHOT)) {
+            mTakeScreenshotExecutor.get().executeScreenshotsAsync(request, onSaved, callback);
+            return;
+        }
+        // TODO(b/295143676): Delete the following after the flag is released.
         try {
-            mProcessor.processAsync(screenshotData,
-                    (data) -> dispatchToController(data, onSaved, callback));
+            ScreenshotData screenshotData = ScreenshotData.fromRequest(
+                request, Display.DEFAULT_DISPLAY);
+        //if (mProcessor != null) {
+            mProcessor.processAsync(screenshotData, (data) -> 
+                    dispatchToController(data, onSaved, callback));
+        //}
+
         } catch (IllegalStateException e) {
             Log.e(TAG, "Failed to process screenshot request!", e);
             logFailedRequest(request);
@@ -262,42 +273,46 @@ public class TakeScreenshotService extends Service {
         }
     }
 
-    private void dispatchToController(ScreenshotRequest request,
+    // TODO(b/295143676): Delete this.
+    private void dispatchToController(ScreenshotData screenshot,
             Consumer<Uri> uriConsumer, RequestCallback callback) {
-        ComponentName topComponent = request.getTopComponent();
-        String packageName = topComponent == null ? "" : topComponent.getPackageName();
-        mUiEventLogger.log(
-                ScreenshotEvent.getScreenshotSource(request.getSource()), 0, packageName);
+        //ComponentName topComponent = screenshot.getTopComponent();
+        //String packageName = topComponent == null ? "" : topComponent.getPackageName();
+        mUiEventLogger.log(ScreenshotEvent.getScreenshotSource(screenshot.getSource()), 0,
+                screenshot.getPackageNameString());
+        Log.d(TAG, "Screenshot request: " + screenshot);
 
-        switch (request.getType()) {
+        /*switch (screenshot.getType()) {
             case WindowManager.TAKE_SCREENSHOT_FULLSCREEN:
                 if (DEBUG_SERVICE) {
-                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_FULLSCREEN");
+                    Log.d(TAG, "dispatchToController: TAKE_SCREENSHOT_FULLSCREEN");
                 }
-                mScreenshot.takeScreenshotFullscreen(topComponent, uriConsumer, callback);
+                mScreenshot.takeScreenshotFullscreen(screenshot, uriConsumer, callback);
                 break;
             case WindowManager.TAKE_SCREENSHOT_SELECTED_REGION:
                 if (DEBUG_SERVICE) {
-                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_SELECTED_REGION");
+                    Log.d(TAG, "dispatchToController: TAKE_SCREENSHOT_SELECTED_REGION");
                 }
-                mScreenshot.takeScreenshotPartial(topComponent, uriConsumer, callback);
+                mScreenshot.handleScreenshot(screenshot, uriConsumer, callback);
                 break;
             case WindowManager.TAKE_SCREENSHOT_PROVIDED_IMAGE:
                 if (DEBUG_SERVICE) {
-                    Log.d(TAG, "handleMessage: TAKE_SCREENSHOT_PROVIDED_IMAGE");
+                    Log.d(TAG, "dispatchToController: TAKE_SCREENSHOT_PROVIDED_IMAGE");
                 }
-                Bitmap screenshot = request.getBitmap();
-                Rect screenBounds = request.getBoundsInScreen();
-                Insets insets = request.getInsets();
-                int taskId = request.getTaskId();
-                int userId = request.getUserId();
+                Bitmap screenshotBitmap = screenshot.getBitmap();
+                Rect screenshotScreenBounds = screenshot.getScreenBounds();
+                Insets insets = screenshot.getInsets();
+                int taskId = screenshot.getTaskId();
+                int userId = screenshot.getUserHandle().getIdentifier();
 
-                mScreenshot.handleImageAsScreenshot(screenshot, screenBounds, insets,
-                        taskId, userId, topComponent, uriConsumer, callback);
+                //mScreenshot.handleImageAsScreenshot(screenshotBitmap, screenshotScreenBounds, insets,
+                //        taskId, userId, topComponent, uriConsumer, callback);
+                mScreenshot.handleScreenshot(screenshot, uriConsumer, callback);
                 break;
             default:
-                Log.wtf(TAG, "Invalid screenshot option: " + request.getType());
-        }
+                Log.wtf(TAG, "Invalid screenshot option: " + screenshot.getType());
+        }*/
+        mScreenshot.handleScreenshot(screenshot, uriConsumer, callback);
     }
 
     private void logFailedRequest(ScreenshotRequest request) {
