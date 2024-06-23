@@ -62,6 +62,7 @@ import com.android.wm.shell.common.pip.SizeSpecSource;
 import com.android.wm.shell.pip.PipAnimationController;
 import com.android.wm.shell.pip.PipTaskOrganizer;
 import com.android.wm.shell.pip.PipTransitionController;
+import com.android.wm.shell.protolog.ShellProtoLogGroup;
 import com.android.wm.shell.sysui.ShellInit;
 
 import java.io.PrintWriter;
