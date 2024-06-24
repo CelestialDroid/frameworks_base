@@ -17,7 +17,9 @@
 package com.android.systemui.statusbar.policy;
 
 import android.annotation.NonNull;
+import android.app.ActivityManager;
 import android.app.StatusBarManager;
+import android.app.WindowConfiguration;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -53,6 +55,9 @@ import com.android.systemui.demomode.DemoModeCommandReceiver;
 import com.android.systemui.plugins.DarkIconDispatcher;
 import com.android.systemui.plugins.DarkIconDispatcher.DarkReceiver;
 import com.android.systemui.settings.UserTracker;
+import com.android.systemui.shared.system.ActivityManagerWrapper;
+import com.android.systemui.shared.system.TaskStackChangeListener;
+import com.android.systemui.shared.system.TaskStackChangeListeners;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.policy.ConfigurationController.ConfigurationListener;
 import com.android.systemui.tuner.TunerService;
@@ -86,7 +91,7 @@ public class Clock extends TextView implements
     private static final String STATUS_BAR_AM_PM =
             "system:" + Settings.System.STATUS_BAR_AM_PM;
     private static final String STATUS_BAR_CLOCK_AUTO_HIDE_LAUNCHER =
-            "system:" + Settings.System.STATUS_BAR_CLOCK_AUTO_HIDE;
+            "system:" + Settings.System.STATUS_BAR_CLOCK_AUTO_HIDE_LAUNCHER;
     public static final String STATUS_BAR_CLOCK_DATE_DISPLAY =
             "system:" + Settings.System.STATUS_BAR_CLOCK_DATE_DISPLAY;
     public static final String STATUS_BAR_CLOCK_DATE_STYLE =
@@ -112,6 +117,7 @@ public class Clock extends TextView implements
 
     private boolean mAttached;
     private boolean mScreenReceiverRegistered;
+    private boolean mTaskStackListenerRegistered;
     private Calendar mCalendar;
     private String mContentDescriptionFormatString;
     private SimpleDateFormat mClockFormat;
@@ -148,6 +154,8 @@ public class Clock extends TextView implements
     private String mClockDateFormat = null;
     private boolean mClockAutoHide;
     private int mHideDuration = HIDE_DURATION, mShowDuration = SHOW_DURATION;
+
+    private boolean mIsStatusBar;
 
     // Fields to cache the width so the clock remains at an approximately constant width
     private int mCharsAtCurrentWidth = -1;
@@ -274,8 +282,10 @@ public class Clock extends TextView implements
 
         // Make sure we update to the current time
         updateShowSeconds();
+        mContext.getMainExecutor().execute(() -> {
         updateClock();
         updateClockVisibility();
+        });
     }
 
     @Override
@@ -298,6 +308,21 @@ public class Clock extends TextView implements
                 Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(this);
             }
             mUserTracker.removeCallback(mUserChangedCallback);
+            handleTaskStackListener(false);
+        }
+    }
+
+    private void handleTaskStackListener(boolean register) {
+        if (!mIsStatusBar) {
+            // We don't support clock auto hide for quick settings.
+            return;
+        }
+        if (register && !mTaskStackListenerRegistered) {
+            TaskStackChangeListeners.getInstance().registerTaskStackListener(mTaskStackListener);
+            mTaskStackListenerRegistered = true;
+        } else if (!register && mTaskStackListenerRegistered) {
+            TaskStackChangeListeners.getInstance().unregisterTaskStackListener(mTaskStackListener);
+            mTaskStackListenerRegistered = false;
         }
     }
 
@@ -330,7 +355,7 @@ public class Clock extends TextView implements
                     mDateTimePatternGenerator = null;
                     updateClockVisibility();
                     updateShowSeconds();
-                    updateClock(true);
+                    updateClock();
                     return;
                 });
             } else if (action.equals(Intent.ACTION_SCREEN_ON)) {
@@ -388,7 +413,7 @@ public class Clock extends TextView implements
     }
 
     final void updateClock() {
-        if (mDemoMode) return;
+        if (mDemoMode || mCalendar == null) return;
         mCalendar.setTimeInMillis(System.currentTimeMillis());
         CharSequence smallTime = getSmallTime();
         // Setting text actually triggers a layout pass (because the text view is set to
@@ -474,8 +499,10 @@ public class Clock extends TextView implements
         // Force refresh of dependent variables.
         mContentDescriptionFormatString = "";
         mDateTimePatternGenerator = null;
-        updateClock(true);
+        mContext.getMainExecutor().execute(() -> {
+            updateClock();
         updateClockVisibility();
+        });
     }
 
     @Override
@@ -743,6 +770,23 @@ public class Clock extends TextView implements
                 updateClock();
             }
             mSecondsHandler.postAtTime(this, SystemClock.uptimeMillis() / 1000 * 1000 + 1000);
+        }
+    };
+
+    private final TaskStackChangeListener mTaskStackListener = new TaskStackChangeListener() {
+        @Override
+        public void onTaskStackChanged() {
+            updateShowClock();
+        }
+
+        @Override
+        public void onTaskRemoved(int taskId) {
+            updateShowClock();
+        }
+
+        @Override
+        public void onTaskMovedToFront(int taskId) {
+            updateShowClock();
         }
     };
 }
