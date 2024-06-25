@@ -126,7 +126,7 @@ public class QuickSettingsController implements Dumpable {
     public static final int SHADE_BACK_ANIM_SCALE_MULTIPLIER = 100;
 
     private static final String STATUS_BAR_QUICK_QS_PULLDOWN =
-            "lineagesystem:" + LineageSettings.System.STATUS_BAR_QUICK_QS_PULLDOWN;
+            "system:" + Settings.System.STATUS_BAR_QUICK_QS_PULLDOWN;
 
     private QS mQs;
     private final Lazy<NotificationPanelViewController> mPanelViewControllerLazy;
@@ -610,6 +610,9 @@ public class QuickSettingsController implements Dumpable {
                 break;
             case 2: // Left side pulldown
                 showQsOverride = mQs.getView().isLayoutRtl() ? w - region < x : x < region;
+                break;
+            case 3: // pull down anywhere
+                showQsOverride = true;
                 break;
         }
         showQsOverride &= mBarState == StatusBarState.SHADE;
