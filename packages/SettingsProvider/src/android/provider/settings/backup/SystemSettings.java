@@ -112,7 +112,9 @@ public class SystemSettings {
                 Settings.System.FULLSCREEN_GESTURES,
                 Settings.System.NOTIFICATION_COOLDOWN_ENABLED,
                 Settings.System.NOTIFICATION_COOLDOWN_ALL,
-                Settings.System.NOTIFICATION_COOLDOWN_VIBRATE_UNLOCKED
+                Settings.System.NOTIFICATION_COOLDOWN_VIBRATE_UNLOCKED,
+                Settings.System.NETWORK_TRAFFIC_STATE,
+                Settings.System.NETWORK_TRAFFIC_AUTOHIDE_THRESHOLD
         ));
         if (Flags.backUpSmoothDisplayAndForcePeakRefreshRate()) {
             settings.add(Settings.System.PEAK_REFRESH_RATE);
