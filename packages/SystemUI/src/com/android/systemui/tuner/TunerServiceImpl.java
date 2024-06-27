@@ -28,6 +28,7 @@ import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
@@ -299,6 +300,7 @@ public class TunerServiceImpl extends TunerService {
         }
         mContentResolver.unregisterContentObserver(mObserver);
         for (Uri uri : mListeningUris.keySet()) {
+            String key = mListeningUris.get(uri);
             mContentResolver.registerContentObserver(uri, false, mObserver, mCurrentUser);
         }
     }
@@ -319,8 +321,6 @@ public class TunerServiceImpl extends TunerService {
 
     private void reloadAll() {
         for (String key : mTunableLookup.keySet()) {
-           if (ArrayUtils.contains(RESET_EXCEPTION_LIST, key) || key.startsWith("system:"))
-                continue;
             String value = getValue(key);
             for (Tunable tunable : mTunableLookup.get(key)) {
                 if (tunable != null) {
@@ -342,7 +342,7 @@ public class TunerServiceImpl extends TunerService {
 
         // A couple special cases.
         for (String key : mTunableLookup.keySet()) {
-            Settings.Secure.putStringForUser(mContentResolver, key, null, user);
+            setValue(key, null);
         }
     }
 
@@ -396,7 +396,8 @@ public class TunerServiceImpl extends TunerService {
         public void onChange(boolean selfChange, java.util.Collection<Uri> uris,
                 int flags, int userId) {
             if (userId == mUserTracker.getUserId()) {
-                for (Uri u : uris) {
+            for (Uri u : uris) {
+                String key = mListeningUris.get(u);
                     reloadSetting(u);
                 }
             }
